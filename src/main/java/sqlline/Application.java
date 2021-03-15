@@ -240,7 +240,8 @@ public class Application {
    * @return Collection of command handlers
    */
   public Collection<CommandHandler> getCommandHandlers(SqlLine sqlLine) {
-    TableNameCompleter tableCompleter = new TableNameCompleter(sqlLine);
+    // command handlers!
+    TableNameCompleter tableCompleter = new TableNameCompleter(sqlLine, false);
     List<Completer> empty = Collections.emptyList();
     final Map<String, OutputFormat> outputFormats = getOutputFormats(sqlLine);
     final Map<BuiltInProperty, Collection<String>> customPropertyCompletions =

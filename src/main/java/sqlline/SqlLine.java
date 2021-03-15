@@ -1850,7 +1850,7 @@ public class SqlLine {
 
   void setCompletions() {
     if (getDatabaseConnection() != null) {
-      getDatabaseConnection().setCompletions(getOpts().getFastConnect());
+      getDatabaseConnection().setCompletions(false); //getOpts().getFastConnect());
     }
   }
 
