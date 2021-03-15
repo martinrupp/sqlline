@@ -341,6 +341,13 @@
   </build>
 
   <dependencies>
+    <!-- only needed when debugging -->
+    <dependency>
+      <groupId>com.splicemachine</groupId>
+      <artifactId>db-client</artifactId>
+      <version>3.2.0.2003</version>
+    </dependency>
+    <!--  -->
     <dependency>
       <groupId>org.jline</groupId>
       <artifactId>jline-terminal</artifactId>
