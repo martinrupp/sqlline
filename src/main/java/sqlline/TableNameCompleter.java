@@ -11,6 +11,7 @@
 */
 package sqlline;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.jline.reader.Candidate;
@@ -24,9 +25,11 @@ import org.jline.reader.impl.completer.StringsCompleter;
  */
 class TableNameCompleter implements Completer {
   private SqlLine sqlLine;
+  private boolean withSchema;
 
-  TableNameCompleter(SqlLine sqlLine) {
+  TableNameCompleter(SqlLine sqlLine, boolean withSchema) {
     this.sqlLine = sqlLine;
+    this.withSchema = withSchema;
   }
 
   @Override public void complete(LineReader lineReader, ParsedLine parsedLine,
@@ -35,8 +38,14 @@ class TableNameCompleter implements Completer {
       return;
     }
 
-    new StringsCompleter(sqlLine.getDatabaseConnection().getTableNames(true))
-        .complete(lineReader, parsedLine, list);
+    // todo: maybe only update every 5s.
+    Collection<String> tables;
+    if (withSchema) {
+      tables = sqlLine.getDatabaseConnection().getTableNamesWithSchema();
+    } else {
+      tables = sqlLine.getDatabaseConnection().getTableNames(true);
+    }
+    new StringsCompleter(tables).complete(lineReader, parsedLine, list);
   }
 }
 

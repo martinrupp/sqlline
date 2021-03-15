@@ -34,6 +34,9 @@ class DatabaseConnection {
   private Schema schema = null;
   private Completer sqlCompleter = null;
   private Dialect dialect;
+  private Timestamp schemaNextUpdate = null;
+  private static final int schemaUpdateIntervalMS = 15000; // update schema every 15s
+
 
   DatabaseConnection(SqlLine sqlLine, String driver, String url,
       String username, String password, Properties properties) {
@@ -55,6 +58,7 @@ class DatabaseConnection {
 
   void setCompletions(boolean skipmeta) {
     // setup the completer for the database
+    //!!
     sqlCompleter = new ArgumentCompleter(new SqlCompleter(sqlLine, skipmeta));
     // not all argument elements need to hold true
     ((ArgumentCompleter) sqlCompleter).setStrict(false);
@@ -217,6 +221,30 @@ class DatabaseConnection {
     }
   }
 
+  public Collection<String> getTableNamesWithSchema()  {
+    String currentSchema = null;
+    try {
+      currentSchema = getConnection().getSchema();
+    } catch (SQLException e) {
+      return null;
+    }
+    getSchema().getSchema2tables();
+    Map<String, Map<String, Set<String>>> list = getSchema().getSchema2tables();
+    Set<String> set = new HashSet<>();
+    for (Map.Entry<String, Map<String, Set<String>>> e : list.entrySet()) {
+      String schema = e.getKey();
+      for (Map.Entry<String, Set<String>> e2 : e.getValue().entrySet()) {
+        String table = e2.getKey();
+        if (schema.equals(currentSchema)) {
+          set.add(table);
+        } else {
+          set.add(schema + "." + table);
+        }
+      }
+    }
+    return set;
+  }
+
   public Collection<String> getTableNames(boolean force) {
     return getSchema().getSchema2tables().values().stream()
         .map(Map::keySet).flatMap(Collection::stream)
@@ -272,7 +300,9 @@ class DatabaseConnection {
     private Map<String, Map<String, Set<String>>> schema2tables;
 
     Map<String, Map<String, Set<String>>> getSchema2tables() {
-      if (schema2tables != null) {
+      Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+      if (schema2tables != null && schemaNextUpdate != null
+              && currentTime.before(schemaNextUpdate)) {
         return schema2tables;
       }
 
@@ -289,13 +319,14 @@ class DatabaseConnection {
       } catch (Throwable t) {
         // ignore
       }
-
+      schemaNextUpdate = new Timestamp(System.currentTimeMillis() + schemaUpdateIntervalMS);
       return schema2tables;
     }
 
 
     Set<String> getColumnNames(String schemaName, String tableName) {
-      Map<String, Set<String>> table2Column = schema2tables.get(schemaName);
+      Map<String, Set<String>> table2Column =
+              getSchema2tables().get(schemaName);
       if (schemaName == null) {
         schema2tables.putIfAbsent(null, new HashMap<>());
         table2Column = schema2tables.get(null);
