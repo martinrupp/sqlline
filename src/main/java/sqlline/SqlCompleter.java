@@ -12,6 +12,7 @@
 package sqlline;
 
 import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,6 +123,7 @@ class SqlCompleter extends StringsCompleter {
         // ignore
       }
     }
+    //
     for (String keyWord : Dialect.DEFAULT_KEYWORD_SET) {
       completions.add(
           generateCandidate(keyWord, keyWord, sqlLine, "keyword", true));
@@ -192,6 +194,22 @@ class SqlCompleter extends StringsCompleter {
         String value = writeAsDialectSpecificValue(dialect, true, sName);
         candidates.add(
             generateCandidate(sName, value, sqlLine, "schema", false));
+      }
+      String currentSchema;
+      try {
+        currentSchema = sqlLine.getConnection().getSchema();
+      } catch (SQLException e) {
+        currentSchema = null;
+      }
+
+      if (currentSchema != null && schema2tables != null
+              && schema2tables.get(currentSchema) != null) {
+        for (String tName : schema2tables.get(currentSchema).keySet()) {
+          String value = writeAsDialectSpecificValue(dialect,
+                  need2Quote, tName);
+          candidates.add(generateCandidate(tName, value, sqlLine,
+                  "table", true));
+        }
       }
       return candidates;
     }
